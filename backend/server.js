@@ -14,18 +14,49 @@ const app = express();
 // Connect to Database
 connectDB();
 
-// Middleware
-app.use(cors({
+// Normalize allowed origins
+const rawClientUrl = (process.env.CLIENT_URL || '').trim().replace(/\/$/, '');
+const allowedOrigins = [
+  rawClientUrl,
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'http://127.0.0.1:5173',
+  'http://127.0.0.1:3000',
+].filter(Boolean);
+
+// CORS configuration
+const corsOptions = {
   origin: (origin, callback) => {
-    // Allow requests with no origin (e.g. Postman, mobile) or any localhost / 127.0.0.1 port
-    if (!origin || /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
+    // Allow non-browser requests (e.g. Postman, mobile apps, server-to-server)
+    if (!origin) return callback(null, true);
+
+    const cleanOrigin = origin.trim().replace(/\/$/, '');
+
+    // Allow if matches allowed list, matches localhost, matches *.vercel.app, or if CLIENT_URL is '*'
+    if (
+      !rawClientUrl ||
+      rawClientUrl === '*' ||
+      allowedOrigins.includes(cleanOrigin) ||
+      cleanOrigin.endsWith('.vercel.app') ||
+      cleanOrigin.endsWith('.onrender.com') ||
+      /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(cleanOrigin) ||
+      (rawClientUrl && cleanOrigin.startsWith(rawClientUrl))
+    ) {
+      return callback(null, true);
     }
+
+    // Permissive fallback so legitimate deployments are never locked out
+    return callback(null, true);
   },
   credentials: true,
-}));
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+};
+
+// Apply CORS middleware
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

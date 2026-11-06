@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const User = require('../models/User');
 const Farmer = require('../models/Farmer');
 const bcrypt = require('bcryptjs');
@@ -35,7 +36,16 @@ const register = async (req, res) => {
       });
     }
 
-    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        success: false,
+        message: 'Database is unavailable. Please check your MongoDB connection or credentials in backend/.env',
+      });
+    }
+
+
+    const cleanEmail = email.trim().toLowerCase();
+    const existingUser = await User.findOne({ email: cleanEmail });
     if (existingUser) {
       return res.status(400).json({
         success: false,
@@ -49,8 +59,8 @@ const register = async (req, res) => {
 
     // Public registration strictly creates 'farmer' role only
     const user = await User.create({
-      name,
-      email: email.toLowerCase(),
+      name: name.trim(),
+      email: cleanEmail,
       password: hashedPassword,
       role: 'farmer',
     });
@@ -102,7 +112,14 @@ const login = async (req, res) => {
       });
     }
 
-    const user = await User.findOne({ email: email.toLowerCase() });
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        success: false,
+        message: 'Database is unavailable. Please check your MongoDB connection or credentials in backend/.env',
+      });
+    }
+
+    const user = await User.findOne({ email: email.trim().toLowerCase() });
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -184,6 +201,14 @@ const createAdmin = async (req, res) => {
         message: 'Please provide name, email, and password',
       });
     }
+
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        success: false,
+        message: 'Database is unavailable. Please check your MongoDB connection or credentials in backend/.env',
+      });
+    }
+
 
     if (confirmPassword && password !== confirmPassword) {
       return res.status(400).json({
@@ -276,6 +301,13 @@ const getAdmins = async (req, res) => {
 const deleteAdmin = async (req, res) => {
   try {
     const targetAdminId = req.params.id;
+
+    if (!mongoose.Types.ObjectId.isValid(targetAdminId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid administrator ID format',
+      });
+    }
 
     // Prevent self-deletion
     if (targetAdminId === req.user._id.toString()) {

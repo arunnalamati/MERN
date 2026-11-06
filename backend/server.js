@@ -68,6 +68,7 @@ app.get('/', (req, res) => {
     version: '1.0.0',
     documentation: {
       auth: ['POST /api/register', 'POST /api/login', 'GET /api/me'],
+      admin: ['GET /api/admin/admins', 'POST /api/admin/create-admin', 'DELETE /api/admin/admins/:id'],
       farmers: ['GET /api/farmers', 'POST /api/farmers', 'PUT /api/farmers/:id', 'DELETE /api/farmers/:id'],
       crops: ['GET /api/crops', 'POST /api/crops', 'PUT /api/crops/:id', 'DELETE /api/crops/:id', 'GET /api/crops/stats/summary'],
     },
@@ -107,7 +108,7 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5000;
 
-const server = app.listen(PORT, () => {
+const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`🌾 Farmer Crop Portal Backend running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
   console.log(`🔗 Base API URL: http://localhost:${PORT}/api`);
 });

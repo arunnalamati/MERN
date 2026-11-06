@@ -7,7 +7,7 @@ import {
   Wheat,
   Calendar,
   CheckCircle2,
-  TrendingUp,
+
   AlertTriangle,
   RefreshCw,
   Award,
@@ -44,6 +44,7 @@ const HarvestHistory = () => {
     if (!sowing || !harvest) return 'N/A';
     const start = new Date(sowing);
     const end = new Date(harvest);
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) return 'N/A';
     const diffTime = Math.abs(end - start);
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return `${diffDays} days`;
@@ -159,7 +160,7 @@ const HarvestHistory = () => {
                 {harvestedCrops.map((crop) => (
                   <tr key={crop._id}>
                     <td>
-                      <span className="mono-code">{crop.cropId || crop._id.substring(0, 8)}</span>
+                      <span className="mono-code">{crop.cropId || (crop._id ? String(crop._id).substring(0, 8) : 'N/A')}</span>
                     </td>
                     <td>
                       <strong>{crop.cropName}</strong>
@@ -175,8 +176,8 @@ const HarvestHistory = () => {
                     <td>
                       <span className="season-pill">{crop.season}</span>
                     </td>
-                    <td>{new Date(crop.sowingDate).toLocaleDateString()}</td>
-                    <td>{new Date(crop.expectedHarvestDate).toLocaleDateString()}</td>
+                    <td>{crop.sowingDate ? new Date(crop.sowingDate).toLocaleDateString() : 'N/A'}</td>
+                    <td>{crop.expectedHarvestDate ? new Date(crop.expectedHarvestDate).toLocaleDateString() : 'N/A'}</td>
                     <td>
                       <span className="duration-tag">
                         {calculateDurationDays(crop.sowingDate, crop.expectedHarvestDate)}

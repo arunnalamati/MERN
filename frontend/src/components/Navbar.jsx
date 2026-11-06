@@ -136,6 +136,14 @@ const Navbar = () => {
                 All Crop Records
               </Link>
               <Link
+                to="/harvest-history"
+                className={`nav-link ${isActive('/harvest-history') ? 'active' : ''}`}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <History size={16} />
+                Harvest History
+              </Link>
+              <Link
                 to="/reports"
                 className={`nav-link ${isActive('/reports') ? 'active' : ''}`}
                 onClick={() => setMobileMenuOpen(false)}

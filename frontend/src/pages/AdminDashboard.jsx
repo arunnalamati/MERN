@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
 import { farmerApi } from '../api/farmerApi';
 import { cropApi } from '../api/cropApi';
 import {
@@ -10,16 +9,14 @@ import {
   CheckCircle2,
   Clock,
   ArrowRight,
-  TrendingUp,
   Server,
-  Database,
   RefreshCw,
   AlertTriangle,
+  BarChart3,
+  History,
 } from 'lucide-react';
 
 const AdminDashboard = () => {
-  const { user } = useAuth();
-
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [farmersCount, setFarmersCount] = useState(0);
@@ -34,27 +31,34 @@ const AdminDashboard = () => {
     setLoading(true);
     setError('');
     try {
-      const [farmersRes, cropsRes] = await Promise.all([
+      const results = await Promise.allSettled([
         farmerApi.getFarmers(),
         cropApi.getCrops(),
       ]);
 
-      if (farmersRes.success) {
-        setFarmersCount(farmersRes.data.length);
-        setRecentFarmers(farmersRes.data.slice(0, 4));
+      const [farmersResult, cropsResult] = results;
+
+      if (farmersResult.status === 'fulfilled' && farmersResult.value?.success) {
+        const farmersList = Array.isArray(farmersResult.value.data) ? farmersResult.value.data : [];
+        setFarmersCount(farmersList.length);
+        setRecentFarmers(farmersList.slice(0, 5));
       }
 
-      if (cropsRes.success) {
-        const crops = cropsRes.data;
-        const totalCrops = crops.length;
-        const activeCrops = crops.filter((c) =>
+      if (cropsResult.status === 'fulfilled' && cropsResult.value?.success) {
+        const cropsList = Array.isArray(cropsResult.value.data) ? cropsResult.value.data : [];
+        const totalCrops = cropsList.length;
+        const activeCrops = cropsList.filter((c) =>
           ['Planted', 'Growing'].includes(c.cropStatus)
         ).length;
-        const harvestedCrops = crops.filter((c) =>
+        const harvestedCrops = cropsList.filter((c) =>
           ['Harvested', 'Completed'].includes(c.cropStatus)
         ).length;
 
         setCropsData({ totalCrops, activeCrops, harvestedCrops });
+      }
+
+      if (farmersResult.status === 'rejected' && cropsResult.status === 'rejected') {
+        setError('Unable to fetch administrative metrics from server. Please verify the backend connection.');
       }
     } catch (err) {
       console.error('Error loading admin dashboard:', err);
@@ -87,6 +91,10 @@ const AdminDashboard = () => {
             <RefreshCw size={16} className={loading ? 'spin' : ''} />
             Refresh
           </button>
+          <Link to="/reports" className="btn btn-secondary">
+            <BarChart3 size={18} />
+            Analytical Reports
+          </Link>
           <Link to="/manage-admins" className="btn btn-secondary">
             <ShieldCheck size={18} />
             Manage Admins
@@ -187,6 +195,28 @@ const AdminDashboard = () => {
           <ArrowRight size={18} className="quick-arrow" />
         </Link>
 
+        <Link to="/reports" className="quick-action-card">
+          <div className="quick-icon-bg bg-blue">
+            <BarChart3 size={22} />
+          </div>
+          <div className="quick-action-text">
+            <h4>Analytical Reports</h4>
+            <p>Generate detailed breakdowns and export printable summaries</p>
+          </div>
+          <ArrowRight size={18} className="quick-arrow" />
+        </Link>
+
+        <Link to="/harvest-history" className="quick-action-card">
+          <div className="quick-icon-bg bg-amber">
+            <History size={22} />
+          </div>
+          <div className="quick-action-text">
+            <h4>Harvest History</h4>
+            <p>Historical logs of completed crops and recorded yields</p>
+          </div>
+          <ArrowRight size={18} className="quick-arrow" />
+        </Link>
+
         <div className="quick-action-card no-hover">
           <div className="quick-icon-bg bg-purple">
             <Server size={22} />
@@ -238,20 +268,22 @@ const AdminDashboard = () => {
               </thead>
               <tbody>
                 {recentFarmers.map((farmer) => (
-                  <tr key={farmer._id}>
+                  <tr key={farmer._id || farmer.farmerId}>
                     <td>
-                      <span className="mono-code">{farmer.farmerId || farmer._id.substring(0, 8)}</span>
+                      <span className="mono-code">
+                        {farmer.farmerId || (farmer._id ? String(farmer._id).substring(0, 8) : 'N/A')}
+                      </span>
                     </td>
                     <td>
-                      <strong>{farmer.farmerName}</strong>
+                      <strong>{farmer.farmerName || 'Unnamed'}</strong>
                     </td>
-                    <td>{farmer.village}</td>
-                    <td>{farmer.mobile}</td>
-                    <td>{farmer.landArea} Acres</td>
+                    <td>{farmer.village || 'N/A'}</td>
+                    <td>{farmer.mobile || 'N/A'}</td>
+                    <td>{farmer.landArea != null ? `${farmer.landArea} Acres` : 'N/A'}</td>
                     <td>
-                      <span className="season-pill">{farmer.soilType}</span>
+                      <span className="season-pill">{farmer.soilType || 'N/A'}</span>
                     </td>
-                    <td>{farmer.irrigationType}</td>
+                    <td>{farmer.irrigationType || 'N/A'}</td>
                   </tr>
                 ))}
               </tbody>

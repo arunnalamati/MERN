@@ -53,7 +53,7 @@ const Login = () => {
 
     setLoading(true);
     try {
-      const loggedInUser = await login(formData.email, formData.password);
+      const loggedInUser = await login(formData.email.trim(), formData.password);
       // Successful login - AuthContext updates state and redirects
       if (loggedInUser.role === 'admin') {
         navigate('/admin-dashboard', { replace: true });
@@ -64,6 +64,8 @@ const Login = () => {
       console.error('Login submit error:', err);
       if (err.response?.data?.message) {
         setError(err.response.data.message);
+      } else if (err.code === 'ERR_NETWORK' || err.message === 'Network Error') {
+        setError('Cannot connect to backend server. Please ensure the backend is running on port 5000 (cd backend; npm run dev).');
       } else if (err.message) {
         setError(err.message);
       } else {

@@ -54,13 +54,14 @@ const ManageFarmers = () => {
     fetchFarmers();
   }, []);
 
-  const filteredFarmers = farmers.filter((f) => {
-    const term = searchTerm.toLowerCase();
+  const filteredFarmers = (farmers || []).filter((f) => {
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) return true;
     return (
-      f.farmerName.toLowerCase().includes(term) ||
-      f.village.toLowerCase().includes(term) ||
-      f.mobile.toLowerCase().includes(term) ||
-      (f.farmerId && f.farmerId.toLowerCase().includes(term))
+      f.farmerName?.toLowerCase().includes(term) ||
+      f.village?.toLowerCase().includes(term) ||
+      f.mobile?.toLowerCase().includes(term) ||
+      f.farmerId?.toLowerCase().includes(term)
     );
   });
 
@@ -68,12 +69,12 @@ const ManageFarmers = () => {
   const handleOpenEdit = (farmer) => {
     setEditingFarmer(farmer);
     setEditFormData({
-      farmerName: farmer.farmerName,
-      village: farmer.village,
-      mobile: farmer.mobile,
-      landArea: farmer.landArea,
-      soilType: farmer.soilType,
-      irrigationType: farmer.irrigationType,
+      farmerName: farmer.farmerName || '',
+      village: farmer.village || '',
+      mobile: farmer.mobile || '',
+      landArea: farmer.landArea ?? '',
+      soilType: farmer.soilType || 'Loamy',
+      irrigationType: farmer.irrigationType || 'Drip Irrigation',
     });
     setEditError('');
   };
@@ -106,6 +107,7 @@ const ManageFarmers = () => {
       const res = await farmerApi.deleteFarmer(deletingFarmer._id);
       if (res.success) {
         setSuccessMsg(`Farmer '${deletingFarmer.farmerName}' and their records deleted.`);
+        if (viewingFarmer?._id === deletingFarmer._id) setViewingFarmer(null);
         setDeletingFarmer(null);
         setFarmers((prev) => prev.filter((f) => f._id !== deletingFarmer._id));
         setTimeout(() => setSuccessMsg(''), 4000);
@@ -204,7 +206,7 @@ const ManageFarmers = () => {
                   <tr key={farmer._id}>
                     <td>
                       <span className="mono-code">
-                        {farmer.farmerId || farmer._id.substring(0, 8)}
+                        {farmer.farmerId || (farmer._id ? String(farmer._id).substring(0, 8) : 'N/A')}
                       </span>
                     </td>
                     <td>
@@ -306,7 +308,7 @@ const ManageFarmers = () => {
                 <div className="detail-item">
                   <span className="detail-label">Registered On:</span>
                   <span className="detail-val">
-                    {new Date(viewingFarmer.createdAt).toLocaleDateString()}
+                    {viewingFarmer.createdAt ? new Date(viewingFarmer.createdAt).toLocaleDateString() : 'N/A'}
                   </span>
                 </div>
               </div>

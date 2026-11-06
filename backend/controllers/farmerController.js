@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Farmer = require('../models/Farmer');
 const Crop = require('../models/Crop');
 const User = require('../models/User');
@@ -62,7 +63,25 @@ const createFarmer = async (req, res) => {
 // @access  Private (Admin or Profile Owner)
 const updateFarmer = async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ success: false, message: 'Invalid farmer ID format' });
+    }
+
     let farmer = await Farmer.findById(req.params.id);
+    if (!farmer) {
+      return res.status(404).json({ success: false, message: 'Farmer record not found' });
+    }
+
+    if (
+      req.user.role !== 'admin' &&
+      farmer.userId &&
+      farmer.userId.toString() !== req.user._id.toString()
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: 'Unauthorized: You can only update your own farmer profile',
+      });
+    }
     if (!farmer) {
       return res.status(404).json({ success: false, message: 'Farmer record not found' });
     }
@@ -92,6 +111,10 @@ const updateFarmer = async (req, res) => {
 // @access  Private (Admin)
 const deleteFarmer = async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ success: false, message: 'Invalid farmer ID format' });
+    }
+
     const farmer = await Farmer.findById(req.params.id);
     if (!farmer) {
       return res.status(404).json({ success: false, message: 'Farmer record not found' });
@@ -105,7 +128,7 @@ const deleteFarmer = async (req, res) => {
 
     // Delete user account if exists
     if (farmer.userId) {
-      await User.findByIdAndDelete(farmer.userId);
+      await User.findOneAndDelete({ _id: farmer.userId, role: 'farmer' });
     }
 
     await Farmer.findByIdAndDelete(req.params.id);

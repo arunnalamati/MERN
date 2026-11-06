@@ -68,19 +68,22 @@ const Reports = () => {
 
   // Compute number of crops per farmer
   const getFarmerCropCount = (farmer) => {
-    return crops.filter((crop) => {
-      const fId = crop.farmerId?._id || crop.farmerId;
-      const uId = crop.userId?._id || crop.userId;
-      const targetFId = farmer._id;
-      const targetUId = farmer.userId?._id || farmer.userId;
-      return (fId && fId.toString() === targetFId.toString()) ||
-             (uId && targetUId && uId.toString() === targetUId.toString());
+    if (!farmer || !farmer._id) return 0;
+    const targetFId = farmer._id.toString();
+    const targetUId = farmer.userId?._id ? farmer.userId._id.toString() : farmer.userId?.toString();
+
+    return (crops || []).filter((crop) => {
+      const cropFarmerId = crop.farmerId?._id ? crop.farmerId._id.toString() : crop.farmerId?.toString();
+      const cropUserId = crop.userId?._id ? crop.userId._id.toString() : crop.userId?.toString();
+
+      return (cropFarmerId && cropFarmerId === targetFId) ||
+             (cropUserId && targetUId && cropUserId === targetUId);
     }).length;
   };
 
   // Get distinct village and farmer lists for filter dropdowns
-  const uniqueVillages = Array.from(new Set(farmers.map((f) => f.village).filter(Boolean))).sort();
-  const uniqueFarmers = Array.from(new Set(farmers.map((f) => f.farmerName).filter(Boolean))).sort();
+  const uniqueVillages = Array.from(new Set((farmers || []).map((f) => f.village).filter(Boolean))).sort();
+  const uniqueFarmers = Array.from(new Set((farmers || []).map((f) => f.farmerName).filter(Boolean))).sort();
 
   // Apply filters handler
   const handleApplyFilters = () => {
@@ -109,7 +112,7 @@ const Reports = () => {
   };
 
   // Filter crops based on applied filters
-  const filteredCrops = crops.filter((crop) => {
+  const filteredCrops = (crops || []).filter((crop) => {
     const cropFarmerName = crop.farmerId?.farmerName || crop.userId?.name || '';
     const cropVillage = crop.farmerId?.village || '';
 
@@ -129,7 +132,7 @@ const Reports = () => {
   });
 
   // Filter farmers based on applied filters
-  const filteredFarmers = farmers.filter((farmer) => {
+  const filteredFarmers = (farmers || []).filter((farmer) => {
     const matchesFarmer =
       appliedFilters.farmer === 'ALL' || farmer.farmerName === appliedFilters.farmer;
 
@@ -394,7 +397,7 @@ const Reports = () => {
                 {filteredCrops.map((crop) => (
                   <tr key={crop._id}>
                     <td>
-                      <span className="mono-code">{crop.cropId || crop._id.substring(0, 8)}</span>
+                      <span className="mono-code">{crop.cropId || (crop._id ? String(crop._id).substring(0, 8) : 'N/A')}</span>
                     </td>
                     <td>
                       <strong>{crop.cropName}</strong>
@@ -469,7 +472,7 @@ const Reports = () => {
                   return (
                     <tr key={farmer._id}>
                       <td>
-                        <span className="mono-code">{farmer.farmerId || farmer._id.substring(0, 8)}</span>
+                        <span className="mono-code">{farmer.farmerId || (farmer._id ? String(farmer._id).substring(0, 8) : 'N/A')}</span>
                       </td>
                       <td>
                         <strong>{farmer.farmerName}</strong>

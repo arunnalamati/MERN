@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Crop = require('../models/Crop');
 const Farmer = require('../models/Farmer');
 
@@ -52,7 +53,8 @@ const getCropById = async (req, res) => {
     }
 
     // Ensure farmer can only view their own crop
-    if (req.user.role === 'farmer' && crop.userId._id.toString() !== req.user._id.toString()) {
+    const cropOwnerId = crop.userId?._id ? crop.userId._id.toString() : crop.userId?.toString();
+    if (req.user.role === 'farmer' && cropOwnerId !== req.user._id.toString()) {
       return res.status(403).json({ success: false, message: 'Unauthorized to view this crop' });
     }
 
@@ -115,6 +117,10 @@ const createCrop = async (req, res) => {
 // @access  Private
 const updateCrop = async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ success: false, message: 'Invalid crop ID format' });
+    }
+
     let crop = await Crop.findById(req.params.id);
 
     if (!crop) {
@@ -122,7 +128,8 @@ const updateCrop = async (req, res) => {
     }
 
     // Verify ownership if role is farmer
-    if (req.user.role === 'farmer' && crop.userId.toString() !== req.user._id.toString()) {
+    const cropOwnerId = crop.userId ? crop.userId.toString() : null;
+    if (req.user.role === 'farmer' && cropOwnerId !== req.user._id.toString()) {
       return res.status(403).json({ success: false, message: 'Unauthorized to modify this crop' });
     }
 
@@ -146,6 +153,10 @@ const updateCrop = async (req, res) => {
 // @access  Private
 const deleteCrop = async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ success: false, message: 'Invalid crop ID format' });
+    }
+
     const crop = await Crop.findById(req.params.id);
 
     if (!crop) {
@@ -153,7 +164,8 @@ const deleteCrop = async (req, res) => {
     }
 
     // Verify ownership if role is farmer
-    if (req.user.role === 'farmer' && crop.userId.toString() !== req.user._id.toString()) {
+    const cropOwnerId = crop.userId ? crop.userId.toString() : null;
+    if (req.user.role === 'farmer' && cropOwnerId !== req.user._id.toString()) {
       return res.status(403).json({ success: false, message: 'Unauthorized to delete this crop' });
     }
 

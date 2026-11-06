@@ -48,7 +48,7 @@ const ManageAdmins = () => {
     try {
       const res = await adminApi.getAdmins();
       if (res.success) {
-        setAdmins(res.data);
+        setAdmins(Array.isArray(res.data) ? res.data : []);
       }
     } catch (err) {
       console.error('Error fetching admins:', err);
@@ -63,8 +63,10 @@ const ManageAdmins = () => {
   }, []);
 
   // Filter admins
-  const filteredAdmins = admins.filter((admin) => {
-    const term = searchTerm.toLowerCase();
+  const filteredAdmins = (admins || []).filter((admin) => {
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) return true;
+
     return (
       admin.name?.toLowerCase().includes(term) ||
       admin.email?.toLowerCase().includes(term)
@@ -105,8 +107,8 @@ const ManageAdmins = () => {
     try {
       // Backend automatically assigns role = "admin" and verifies logged-in JWT
       const res = await adminApi.createAdmin({
-        name: createFormData.name,
-        email: createFormData.email,
+        name: createFormData.name.trim(),
+        email: createFormData.email.trim().toLowerCase(),
         password: createFormData.password,
         confirmPassword: createFormData.confirmPassword,
       });
@@ -142,7 +144,8 @@ const ManageAdmins = () => {
     // Client-side guard for self-deletion
     if (
       deletingAdmin._id === currentUser?.id ||
-      deletingAdmin._id === currentUser?._id
+      deletingAdmin._id === currentUser?._id ||
+      (deletingAdmin.email && currentUser?.email && deletingAdmin.email.toLowerCase() === currentUser.email.toLowerCase())
     ) {
       setError('You cannot delete your own admin account.');
       setDeletingAdmin(null);
@@ -174,7 +177,7 @@ const ManageAdmins = () => {
     return (
       admin._id === currentUser?.id ||
       admin._id === currentUser?._id ||
-      admin.email === currentUser?.email
+      (admin.email && currentUser?.email && admin.email.toLowerCase() === currentUser.email.toLowerCase())
     );
   };
 
@@ -345,7 +348,7 @@ const ManageAdmins = () => {
                         ) : (
                           <button
                             onClick={() => setDeletingAdmin(admin)}
-                            className="action-btn delete-btn"
+                            className="btn-action btn-action-delete"
                             title={`Delete ${admin.name}`}
                           >
                             <Trash2 size={16} />

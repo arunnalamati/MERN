@@ -9,16 +9,16 @@ import {
   Filter,
   Edit2,
   Trash2,
-  Calendar,
+
   AlertTriangle,
   CheckCircle2,
   X,
-  Clock,
+
   RefreshCw,
 } from 'lucide-react';
 
 const MyCrops = () => {
-  const { user, isAdmin } = useAuth();
+  const { isAdmin } = useAuth();
 
   const [crops, setCrops] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -62,11 +62,17 @@ const MyCrops = () => {
   }, []);
 
   // Filter crops
-  const filteredCrops = crops.filter((crop) => {
+  const filteredCrops = (crops || []).filter((crop) => {
+    const term = searchTerm.trim().toLowerCase();
+    const farmerName = crop.farmerId?.farmerName || crop.userId?.name || '';
+    const villageName = crop.farmerId?.village || '';
+
     const matchesSearch =
-      crop.cropName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (crop.cropId && crop.cropId.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (crop.farmerId?.farmerName && crop.farmerId.farmerName.toLowerCase().includes(searchTerm.toLowerCase()));
+      !term ||
+      crop.cropName?.toLowerCase().includes(term) ||
+      crop.cropId?.toLowerCase().includes(term) ||
+      farmerName.toLowerCase().includes(term) ||
+      villageName.toLowerCase().includes(term);
 
     const matchesStatus =
       statusFilter === 'ALL' || crop.cropStatus === statusFilter;
@@ -271,7 +277,7 @@ const MyCrops = () => {
                 {filteredCrops.map((crop) => (
                   <tr key={crop._id}>
                     <td>
-                      <span className="mono-code">{crop.cropId || crop._id.substring(0, 8)}</span>
+                      <span className="mono-code">{crop.cropId || (crop._id ? String(crop._id).substring(0, 8) : 'N/A')}</span>
                     </td>
                     <td>
                       <strong>{crop.cropName}</strong>
